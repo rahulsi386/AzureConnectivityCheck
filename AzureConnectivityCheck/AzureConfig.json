@@ -1,0 +1,13 @@
+{
+  "EventHubConString": "Endpoint=sb://rpseventhubns.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=pkXQlFmWte7T/ZhoRy3FGDLQd+fQQePlW/Dn+B2RtuU=",
+  "EventHubName": "rpshub",
+  "ServiceBusConString": "Endpoint=sb://rpsservicebusns.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SHE7WaIT2pIs+or9IJktFMs8SZ4m3eZNODpoZ7ZOqns=",
+  "TopicName": "rpstopic",
+  "TopicSubscriptionName": "rpssubscription",
+  "SqlServerName": "sqlserverrps",
+  "SqlDbName": "rpssqldb",
+  "SqlUserId": "rpsadmin",
+  "SqlPassword": "Password@123",
+  "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=funcappstoragerps;AccountKey=FIHOg3AUZ0q+2UUXtaeR64Zq6yDsi8S2wmZbgIF6TCwm5fKqCQHsBTCXmPIbCXCt6bgc850aLdO8AatLsZTLhg==;EndpointSuffix=core.windows.net",
+  "StorageContainerName": "qad-eventprocesshost"
+}
