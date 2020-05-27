@@ -8,8 +8,9 @@ using System.Data.SqlClient;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.IO;
-using System.Data.Common;
 using System.Threading;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Identity;
 
 namespace AzureConnectivityCheck
 {
@@ -33,11 +34,22 @@ namespace AzureConnectivityCheck
         public static string _StorageContainerName;
         public static string _StorageConnectionString;
 
+        private static string _KeyVaultClientId;
+        private static string _KeyVaultClientSecret;
+        private static string _KeyVaultDNSName;
+        private static string _TenantId;
+        
+
         static AzureCheckSequence()
         {
             try
             {
-                var jsonString = File.ReadAllText("../../../AzureConfig.json");
+                //Specify below path for Debug version
+                //var jsonString = File.ReadAllText("..\\..\\..\\AzureConfig.json");
+
+                //Specify below path for Release version
+                var jsonString = File.ReadAllText(".\\AzureConfig.json");
+
                 AzureConStringJsonType jsonConfigObject = JsonConvert.DeserializeObject<AzureConStringJsonType>(jsonString);
 
                 _EventHubConString = jsonConfigObject.EventHubConString;
@@ -51,6 +63,10 @@ namespace AzureConnectivityCheck
                 _SqlDbName = jsonConfigObject.SqlDbName;
                 _StorageContainerName = jsonConfigObject.StorageContainerName;
                 _StorageConnectionString = jsonConfigObject.StorageConnectionString;
+                _KeyVaultClientId = jsonConfigObject.KeyVaultClientId;
+                _KeyVaultClientSecret = jsonConfigObject.KeyVaultClientSecret;
+                _KeyVaultDNSName = jsonConfigObject.KeyVaultDNSName;
+                _TenantId = jsonConfigObject.TenantId;
             }
             catch(Exception ex)
             {
@@ -70,25 +86,33 @@ namespace AzureConnectivityCheck
             Console.WriteLine("4. Check connectivity to ServiceBus Namespace");
             Console.WriteLine("5. Check connectivity from ServiceBus Topic to SQL DB");
             Console.WriteLine("6. Run all check sequence");
+            Console.WriteLine("7. Clean-up test resources");
+            Console.WriteLine("8. Check Connectivity to Key Vault");
+            Console.WriteLine("9. Check Connectivity to Azure Storage");
             Console.WriteLine("***********************************************");
             Console.ResetColor();
             SelectedChoice = Console.ReadLine();
             switch (SelectedChoice)
             {
                 case "1":
-                    TestAzureSql();                    
+                    TestAzureSql();
+                    Console.ReadLine();
                     break;
                 case "2":
-                    TestEventHubAsync().GetAwaiter().GetResult();                                       
+                    TestEventHubAsync().GetAwaiter().GetResult();
+                    Console.ReadLine();
                     break;
                 case "3":
                     TestEventHubToSqlAsync().GetAwaiter().GetResult();
+                    Console.ReadLine();
                     break;
                 case "4":
                     TestServiceBusTopicAsync().GetAwaiter().GetResult();
+                    Console.ReadLine();
                     break;
                 case "5":
                     SBTopicMessageProcessor.TestSbTopicToSqlAsync().GetAwaiter().GetResult();
+                    Console.ReadLine();
                     break;
                 case "6":
                     TestAzureSql();
@@ -96,7 +120,32 @@ namespace AzureConnectivityCheck
                     TestEventHubToSqlAsync().GetAwaiter().GetResult();
                     TestServiceBusTopicAsync().GetAwaiter().GetResult();
                     SBTopicMessageProcessor.TestSbTopicToSqlAsync().GetAwaiter().GetResult();
-                    break;                
+                    Console.ReadLine();
+                    break;
+                case "7":
+                    CleanUpTestResources();
+                    Console.ReadLine();
+                    break;
+            }
+        }
+
+        public static void CleanUpTestResources()
+        {
+            try
+            {
+                using (SqlConnection sqlCon = new SqlConnection(SqlConString()))
+                {
+                    sqlCon.Open();
+                    Console.WriteLine("\tCleaning up test resources...");
+                    ExecuteTSqlNonQuery(sqlCon, DropSQLTable());
+                    Console.WriteLine("\tDeleted table dbo.employee table from database.");
+                    sqlCon.Close();
+                    Console.WriteLine("\tConnection to database closed");
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorGrabber(ex.Message);
             }
         }
 
@@ -105,6 +154,21 @@ namespace AzureConnectivityCheck
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"An error occurred: {errorMessage}");
             Console.ResetColor();
+        }
+
+        private static async Task TestKeyVaultAsync()
+        {
+            try
+            {
+                SecretClient secretClient = new SecretClient(vaultUri: new Uri(_KeyVaultDNSName), credential: new ClientSecretCredential(_TenantId, _KeyVaultClientId, _KeyVaultClientSecret));
+                KeyVaultSecret secret = new KeyVaultSecret("Test Secret", new Guid().ToString());
+                secret.Properties.Enabled = true;
+                await secretClient.SetSecretAsync(secret);
+            }
+            catch(Exception ex)
+            {
+                ErrorGrabber(ex.Message);
+            }
         }
         private static async Task TestEventHubAsync()
         {
@@ -176,6 +240,11 @@ namespace AzureConnectivityCheck
                 );";
         }
 
+        private static string DropSQLTable()
+        {
+            return @"
+                DROP TABLE IF EXISTS dbo.employee;";
+        }
         public static string InsertIntoSQLTable()
         {
             return @"
@@ -276,6 +345,9 @@ namespace AzureConnectivityCheck
                     ExecuteTSqlNonQuery(sqlCon, InsertIntoSQLTable(), "@empName", "RPS");
                     Console.WriteLine("\tSelecting records from dbo.employee table");
                     ExecuteSelectSqlQuery(sqlCon, SelectSqlQuery());
+                    Console.WriteLine("\tCleaning up test resources...");
+                    ExecuteTSqlNonQuery(sqlCon, DropSQLTable());
+                    Console.WriteLine("\tDeleted table dbo.employee table from database.");
                     sqlCon.Close();
                     Console.WriteLine("\tConnection to database closed");
                 }
@@ -391,5 +463,9 @@ namespace AzureConnectivityCheck
         public string SqlPassword { get; set; }    
         public string StorageConnectionString { get; set; }
         public string StorageContainerName { get; set; }
+        public string KeyVaultClientId { get; set; }
+        public string KeyVaultClientSecret { get; set; }
+        public string KeyVaultDNSName { get; set; }
+        public string TenantId { get; set; }
     }
 }
