@@ -10,13 +10,12 @@ namespace AzureConnectivityCheck
 {
     class SBTopicMessageProcessor
     {
-        public static ISubscriptionClient subscriptionClient;
-        public static SqlConnection sqlCon;
+        private static ISubscriptionClient subscriptionClient;
+        private static SqlConnection sqlCon;
         public static async Task TestSbTopicToSqlAsync()
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Beginning to read messages from ServiceBus Topic...");
-            Console.ResetColor();
+            Console.WriteLine("Beginning to read messages from ServiceBus Topic...");           
             try
             {
                 subscriptionClient = new SubscriptionClient(AzureCheckSequence._ServiceBusConString, AzureCheckSequence._TopicName, AzureCheckSequence._TopicSubscriptionName);
@@ -37,6 +36,7 @@ namespace AzureConnectivityCheck
                 await subscriptionClient.CloseAsync();
                 sqlCon.Close();
                 sqlCon.Dispose();
+                Console.WriteLine("\tTest Succeeded!");
                 Console.ResetColor();
             }
             catch(Exception ex)
