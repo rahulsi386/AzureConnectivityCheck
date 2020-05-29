@@ -13,5 +13,6 @@
   "KeyVaultClientId": "8df0d8f7-66f1-41bc-8e06-a8b3a27808a2",
   "KeyVaultClientSecret": "3eep5~cWY_U38KgFIlG0zIV2TUL~EcwTp-",
   "KeyVaultDNSName": "https://rahulsi386vault.vault.azure.net/",
+  "KeyVaultSecretName": "test-kvcon-secret",
   "TenantId": "6fc2c87a-16f8-4f8d-9d29-b3da36ce22e4"
 }
